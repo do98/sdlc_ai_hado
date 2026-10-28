@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mục lục thiết kế HTML — Chat với tài liệu</title>
+<style>
+:root{--text:#1F2937;--muted:#4B5563;--primary:#1D4ED8;--panel:#F9FAFB;--div:#E5E7EB;--ctl:#6B7280;--font:"Be Vietnam Pro","Inter","Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;font:400 16px/24px var(--font);color:var(--text);background:#fff}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:4px}
+header{background:#111827;color:#fff;padding:12px 24px;font-size:14px;line-height:20px}
+main{max-width:1040px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:24px}
+h1{margin:0;font-size:28px;line-height:36px}
+h2{margin:0 0 8px;font-size:20px;line-height:28px}
+p{margin:0}
+.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:0;margin:0;list-style:none}
+.card{display:grid;gap:8px;align-content:start;border:1px solid var(--div);border-radius:12px;padding:20px;background:#fff;text-decoration:none;color:inherit;height:100%}
+.card:hover{border-color:var(--primary);background:var(--panel)}
+.id{font-size:14px;font-weight:600;color:var(--primary)}
+.card h3{margin:0;font-size:18px;line-height:26px}
+.meta{font-size:14px;line-height:20px;color:var(--muted)}
+.tag{display:inline-block;border:1px dashed var(--ctl);border-radius:4px;padding:0 6px;font-size:12px;line-height:18px;color:var(--muted)}
+.box{background:var(--panel);border:1px solid var(--div);border-radius:12px;padding:20px;display:grid;gap:8px}
+ul.plain{margin:0;padding-left:20px}
+ul.plain li{margin:4px 0}
+code{background:#fff;border:1px solid var(--div);border-radius:4px;padding:0 6px;font-size:14px}
+a{color:var(--primary)}
+</style>
+</head>
+<body>
+<header><strong>Bản thiết kế HTML</strong> · Công cụ "Chat với tài liệu" (MVP) · Phiên bản 0.1 · 2026-10-28</header>
+<main id="main">
+  <div>
+    <h1>Mục lục thiết kế giao diện</h1>
+    <p class="muted" style="margin-top:8px">9 màn hình theo <a href="../UIUX_Blueprint.md">UIUX_Blueprint.md</a> §3.5.1. Mỗi màn hình là <strong>một file HTML độc lập</strong> (CSS và JavaScript nhúng sẵn, không cần máy chủ, không tải thư viện bên ngoài): mở trực tiếp bằng trình duyệt.</p>
+  </div>
+
+  <ul class="grid" aria-label="Danh sách màn hình">
+    <li><a class="card" href="scr-01-dang-nhap.html"><span class="id">SCR-01 · P0</span><h3>Đăng nhập / Không có quyền</h3><span class="meta">US-001 · Trạng thái: đăng nhập, đang chuyển hướng, phiên hết hạn, không có quyền, hệ thống xác thực lỗi</span></a></li>
+    <li><a class="card" href="scr-02-man-hinh-lam-viec.html"><span class="id">SCR-02 · P0</span><h3>Màn hình làm việc</h3><span class="meta">US-002..019, 022 · Tài liệu + hội thoại, hỏi đáp có trích dẫn, tải tệp, xóa, đánh giá. Hoạt động được (dữ liệu minh họa)</span></a></li>
+    <li><a class="card" href="scr-03-tai-tai-lieu.html"><span class="id">SCR-03 · P0</span><h3>Khu tải tài liệu</h3><span class="meta">US-002..006 · Hàng chờ đủ trạng thái: đang tải, chờ lượt, bị từ chối, mất mạng; vùng thả tệp</span></a></li>
+    <li><a class="card" href="scr-04-xem-nguon.html"><span class="id">SCR-04 · P0 / P1</span><h3>Ngăn xem nguồn</h3><span class="meta">US-015, 016 · Mở sẵn ngăn nguồn; đổi trạng thái: đang tải, nguồn đã xóa, không có quyền, lỗi</span></a></li>
+    <li><a class="card" href="scr-05-phien-cu.html"><span class="id">SCR-05 · P2</span><h3>Phiên cũ</h3><span class="meta">US-020 · Danh sách phiên + xem lại chỉ đọc, phân trang, trạng thái trống/lỗi</span></a></li>
+    <li><a class="card" href="scr-06-bao-cao-tuan.html"><span class="id">SCR-06 · P0</span><h3>Báo cáo tuần</h3><span class="meta">US-023 · Chỉ Product Owner. Đổi tuần, tuần không hoạt động, trạng thái tải/lỗi, bị từ chối</span></a></li>
+    <li><a class="card" href="scr-07-quan-ly-nguoi-dung.html"><span class="id">SCR-07 · <span class="tag">đề xuất</span></span><h3>Quản lý người dùng</h3><span class="meta">UC-17, US-021 · Chỉ Quản trị viên. Cấp quyền (biểu mẫu có kiểm tra), thu hồi có xác nhận</span></a></li>
+    <li><a class="card" href="scr-08-trang-loi.html"><span class="id">SCR-08 · P0</span><h3>Trang lỗi chung</h3><span class="meta">PRD §4.2 · 404, lỗi hệ thống, mất kết nối, đang kết nối lại</span></a></li>
+    <li><a class="card" href="scr-09-xac-nhan-xoa.html"><span class="id">SCR-09 · P1</span><h3>Hộp thoại xác nhận xóa</h3><span class="meta">US-018 · Mở sẵn hộp thoại; tiêu điểm mặc định ở nút "Hủy"</span></a></li>
+  </ul>
+
+  <section class="box" aria-labelledby="h-use">
+    <h2 id="h-use">Cách xem và thử</h2>
+    <ul class="plain">
+      <li>Thanh đen trên cùng của mỗi màn hình là <strong>chế độ xem thiết kế</strong> (không thuộc sản phẩm): bấm <em>“Trạng thái và ghi chú”</em> để đổi trạng thái (đang tải, lỗi, trống...), đổi vai trò xem, và đọc ghi chú truy vết story và câu hỏi mở.</li>
+      <li>Trạng thái được lưu trên địa chỉ trang, ví dụ <code>#role=po&amp;state=zero</code>, nên có thể gửi liên kết đúng trạng thái cho người khác.</li>
+      <li><strong>Vai trò</strong> quyết định menu: chỉ Product Owner thấy “Báo cáo”, chỉ Quản trị viên thấy “Quản trị”. Vào trang không đúng vai trò sẽ thấy thông báo từ chối (không nêu lý do).</li>
+      <li>Thử bàn phím: <code>Tab</code> theo thứ tự đọc, <code>Enter</code> gửi câu hỏi, <code>Shift+Enter</code> xuống dòng, <code>Esc</code> đóng ngăn nguồn / hộp thoại / menu.</li>
+      <li>Thu nhỏ cửa sổ để xem các điểm ngắt: ≥ 1280 px hai ngăn · 768–1279 px ngăn tài liệu thành ngăn trượt · &lt; 768 px một cột có thanh tab dưới.</li>
+    </ul>
+  </section>
+
+  <section class="box" aria-labelledby="h-note">
+    <h2 id="h-note">Lưu ý</h2>
+    <ul class="plain">
+      <li>Toàn bộ dữ liệu, câu trả lời, số liệu báo cáo và tên người dùng là <strong>minh họa</strong>; không có kết nối máy chủ hay dịch vụ AI.</li>
+      <li>Giới hạn tệp 50 MB trong bản thiết kế chỉ để minh họa; giá trị thật <strong>[TBD: OQ-004]</strong>. Nút “Chia sẻ” và “Mở tài liệu gốc” hiển thị ở trạng thái chờ quyết định (OQ-007, OQ-027).</li>
+      <li>Màu sắc dùng bộ token trung tính ở Blueprint §3.2.2, <strong>chờ OQ-023</strong> (thương hiệu / design system của công ty).</li>
+      <li>Bản thiết kế chưa được kiểm thử với người dùng thật và chưa kiểm tra trên mọi trình duyệt (<strong>OQ-024</strong>).</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

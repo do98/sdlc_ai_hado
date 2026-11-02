@@ -1,0 +1,102 @@
+{
+  "id": "E2E-002",
+  "conclusion": "Bị chặn",
+  "steps": [
+    {
+      "n": 1,
+      "action": "Mở http://localhost:5173/login (cửa sổ mới, chưa có cookie)",
+      "expected": "Thấy tiêu đề \"Đăng nhập\", ô \"Tên đăng nhập\", ô \"Mật khẩu\", nút \"Đăng nhập\"",
+      "actual": "Có đủ tiêu đề, 2 ô nhập và nút: true",
+      "pass": true,
+      "shot": "01-trang-dang-nhap.png",
+      "status": "pass"
+    },
+    {
+      "n": 2,
+      "action": "Nhập `admin` vào ô \"Tên đăng nhập\"",
+      "expected": "Ô hiển thị `admin`",
+      "actual": "Giá trị ô = \"admin\"",
+      "pass": true,
+      "shot": "02-nhap-ten.png",
+      "status": "pass"
+    },
+    {
+      "n": 3,
+      "action": "Nhập mật khẩu dev vào ô \"Mật khẩu\"",
+      "expected": "Ký tự hiển thị dạng chấm (type=password)",
+      "actual": "type của ô = \"password\"",
+      "pass": true,
+      "shot": "03-nhap-mat-khau.png",
+      "status": "pass"
+    },
+    {
+      "n": 4,
+      "action": "Bấm nút \"Đăng nhập\"",
+      "expected": "Chuyển về `/`; thấy \"Xin chào, admin\" và nút \"Đăng xuất\"; POST /api/auth/login trả 204",
+      "actual": "URL = http://localhost:5173/; login = 204; \"Xin chào, admin\": true; \"Đăng xuất\": true; đã dùng trước khi tải: 8/20",
+      "pass": true,
+      "shot": "04-da-dang-nhap.png",
+      "status": "pass"
+    },
+    {
+      "n": 5,
+      "action": "Bấm nút \"Tải PDF lên\" (Playwright chặn hộp thoại chọn tệp bằng sự kiện filechooser)",
+      "expected": "Hộp thoại chọn tệp mở ra (sự kiện filechooser phát sinh), cho phép chọn nhiều tệp",
+      "actual": "Sự kiện filechooser phát sinh; cho chọn nhiều tệp: true",
+      "pass": true,
+      "shot": "05-mo-hop-thoai-chon-tep.png",
+      "status": "pass"
+    },
+    {
+      "n": 6,
+      "action": "Chọn tệp `data/hop-dong-mau.pdf` trong hộp thoại",
+      "expected": "Xuất hiện hàng `hop-dong-mau.pdf` với trạng thái \"Đã tải lên, đang xử lý\" rồi \"Đang xử lý\"; bộ đếm \"Đã dùng n/20\" tăng 1; POST /api/documents trả 202",
+      "actual": "POST /api/documents = 202; có hàng hop-dong-mau.pdf: true; \"Đang xử lý\": true; bộ đếm 8 → 9",
+      "pass": true,
+      "shot": "06-da-tai-len.png",
+      "status": "pass"
+    },
+    {
+      "n": 7,
+      "action": "Chờ tối đa 60 giây, quan sát trạng thái hàng `hop-dong-mau.pdf` (kiểm tra mỗi 2 giây)",
+      "expected": "Theo thiết kế: nhãn chuyển thành \"Sẵn sàng\" không cần tải lại trang",
+      "actual": "Sau 61 giây trạng thái hàng: \"hop-dong-mau.pdf 49 KB\" — vẫn \"Đang xử lý\", KHÔNG chuyển \"Sẵn sàng\" (T08 chưa hiện thực) → điểm bị chặn",
+      "pass": false,
+      "shot": "07-cho-san-sang.png",
+      "status": "fail"
+    },
+    {
+      "n": 8,
+      "action": "Quan sát ô \"Câu hỏi về tài liệu\"",
+      "expected": "Hiện nay: ô bị khóa kèm \"Chưa có tài liệu sẵn sàng. Hãy tải PDF lên và chờ xử lý xong để đặt câu hỏi.\"",
+      "actual": "Ô nhập bị khóa: true; có dòng giải thích đúng nguyên văn: true",
+      "pass": true,
+      "shot": "08-o-nhap-khoa.png",
+      "status": "pass"
+    },
+    {
+      "n": 9,
+      "action": "Nhập \"Thời hạn bảo hành là bao lâu?\" vào ô \"Câu hỏi về tài liệu\" rồi gửi",
+      "expected": "Câu trả lời hiện dần, chứa \"24 tháng\" và trích dẫn dạng [1]",
+      "actual": "KHÔNG CHẠY ĐƯỢC — tính năng chưa hiện thực (không có xử lý nền T08 để tài liệu thành \"Sẵn sàng\" và chưa có hỏi đáp/trích dẫn); không thể quan sát kết quả nên không ghi Đạt.",
+      "pass": null,
+      "status": "skip"
+    },
+    {
+      "n": 10,
+      "action": "Bấm trích dẫn [1] trong câu trả lời",
+      "expected": "Ngăn \"Nguồn\" mở, đúng tên `hop-dong-mau.pdf`, đúng trang 2, đoạn nguồn được làm nổi",
+      "actual": "KHÔNG CHẠY ĐƯỢC — tính năng chưa hiện thực (không có xử lý nền T08 để tài liệu thành \"Sẵn sàng\" và chưa có hỏi đáp/trích dẫn); không thể quan sát kết quả nên không ghi Đạt.",
+      "pass": null,
+      "status": "skip"
+    },
+    {
+      "n": 11,
+      "action": "Đối chiếu việc người dùng mới hoàn thành chuỗi mà không cần trợ giúp ngoài",
+      "expected": "Mọi bước đều có chỉ dẫn trên màn hình",
+      "actual": "KHÔNG CHẠY ĐƯỢC — tính năng chưa hiện thực (không có xử lý nền T08 để tài liệu thành \"Sẵn sàng\" và chưa có hỏi đáp/trích dẫn); không thể quan sát kết quả nên không ghi Đạt.",
+      "pass": null,
+      "status": "skip"
+    }
+  ]
+}

@@ -52,6 +52,8 @@ async function startSession(id, options = {}) {
     dir,
     page,
     context,
+    browser,
+    log,
     baseUrl: BASE_URL,
     dataDir: data,
     shot,

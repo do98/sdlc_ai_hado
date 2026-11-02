@@ -1,0 +1,72 @@
+[
+  {
+    "method": "GET",
+    "path": "/src/shared/api/index.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/http.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/upload.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/events.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/queryKeys.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/auth.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/documents.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/sseParser.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/src/shared/api/errors.ts",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/me",
+    "status": 401
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "status": 204
+  },
+  {
+    "method": "GET",
+    "path": "/api/me",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/documents",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "path": "/api/events",
+    "status": 200
+  }
+]

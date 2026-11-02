@@ -1,10 +1,10 @@
 package vn.docchat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import vn.docchat.support.PostgresTestBase;
 
-@SpringBootTest
-class DocchatApplicationTests {
+/** Ứng dụng khởi động được với PostgreSQL thật và Flyway chạy migration. */
+class DocchatApplicationTests extends PostgresTestBase {
 
     @Test
     void contextLoads() {}

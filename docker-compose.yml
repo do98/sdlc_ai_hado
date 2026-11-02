@@ -1,0 +1,23 @@
+# Môi trường phát triển (T03). Chỉ dành cho máy dev: mật khẩu mẫu, không dùng ở môi trường thật.
+#   docker compose up -d db
+# Rồi chạy backend với: DOCCHAT_DB_URL=jdbc:postgresql://localhost:5432/docchat DOCCHAT_DB_USER=docchat DOCCHAT_DB_PASSWORD=docchat-dev
+services:
+  db:
+    # PostgreSQL 16 + pgvector (cần cho migration db/vector)
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: docchat
+      POSTGRES_USER: docchat
+      POSTGRES_PASSWORD: ${DOCCHAT_DB_PASSWORD:-docchat-dev}
+    ports:
+      - '5432:5432'
+    volumes:
+      - docchat-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U docchat -d docchat']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  docchat-db:

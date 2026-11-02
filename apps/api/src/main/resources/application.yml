@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: docchat-api
+  datasource:
+    url: ${DOCCHAT_DB_URL:jdbc:postgresql://localhost:5432/docchat}
+    username: ${DOCCHAT_DB_USER:docchat}
+    password: ${DOCCHAT_DB_PASSWORD:}
+  flyway:
+    # db/vector cần pgvector. Môi trường không có pgvector (test với PostgreSQL nhúng) chỉ dùng classpath:db/migration.
+    locations: classpath:db/migration,classpath:db/vector
+  threads:
+    virtual:
+      enabled: true
+  servlet:
+    multipart:
+      # Giới hạn cứng của tầng HTTP; giới hạn nghiệp vụ (10 MB/tệp) kiểm ở T07. Vượt → 413 FILE_TOO_LARGE.
+      max-file-size: 12MB
+      max-request-size: 13MB
+
+docchat:
+  # BẮT BUỘC, không có mặc định: thiếu hoặc sai thì ứng dụng không khởi động và báo rõ khóa.
+  storage:
+    dir: ${DOCCHAT_STORAGE_DIR:}
+    # base64 của đúng 32 byte, ví dụ: openssl rand -base64 32
+    encryption-key: ${DOCCHAT_STORAGE_ENCRYPTION_KEY:}
+  # Giới hạn tải lên (T07, [TBD: OQ-004]); đổi bằng biến môi trường, ví dụ DOCCHAT_LIMITS_MAX_FILE_MB
+  limits:
+    max-file-mb: 10
+    max-pages: 100 # kiểm ở xử lý nền (T08)
+    max-documents: 20
+  # Đăng nhập (T04). Mọi giá trị đổi được bằng biến môi trường, ví dụ DOCCHAT_AUTH_COOKIE_SECURE=false khi chạy http cục bộ.
+  auth:
+    session-ttl: PT8H # hạn tuyệt đối kể từ lúc đăng nhập
+    max-failed-logins: 5
+    lock-duration: PT15M
+    cookie-name: DOCCHAT_SESSION
+    cookie-secure: true
+    cookie-same-site: Lax
+    allowed-origins: [] # rỗng = chỉ chấp nhận cùng origin với Host của yêu cầu
+    login-rate-limit-per-minute: 20
+    min-password-length: 12
+  # Kênh sự kiện SSE (T09)
+  events:
+    heartbeat: PT15S
+    history-limit: 1000
+    retention: PT24H
+  # Tạo tài khoản Admin đầu tiên khi khởi động nếu đặt cả hai biến (chạy lại không tạo trùng):
+  #   DOCCHAT_ADMIN_USERNAME, DOCCHAT_ADMIN_PASSWORD
+
+logging:
+  pattern:
+    # traceId lấy từ header X-Request-Id (MDC) để truy vết một yêu cầu qua log
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%X{traceId:-}] %-40.40logger{39} : %m%n%wEx"
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never

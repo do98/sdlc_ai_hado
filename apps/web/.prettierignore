@@ -1,3 +1,7 @@
 dist
 node_modules
 coverage
+test-results
+playwright-report
+src/shared/api/schema.d.ts
+public/mockServiceWorker.js

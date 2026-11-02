@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: Chat với tài liệu — API
+  version: 0.1.0
+  description: |
+    Hợp đồng API giữa frontend và backend (T05). **Đây là nguồn sự thật duy nhất**: kiểu TypeScript, MSW, test hợp đồng
+    phía backend và danh mục mã lỗi đều lấy từ tệp này. Đổi hợp đồng = sửa tệp này trong cùng PR.
+
+    Hai endpoint trả luồng sự kiện (SSE) — `GET /api/events` và `POST /api/conversations/{id}/messages` — được mô tả
+    chi tiết ở [sse-events.md](sse-events.md) vì OpenAPI không mô tả được luồng sự kiện.
+
+    Quy ước: JSON `camelCase`; thời gian ISO 8601 có hậu tố `Z`; mọi lỗi theo schema `Error`; xác thực bằng cookie phiên
+    `DOCCHAT_SESSION` (HttpOnly). Các hình dạng ở nhóm tài liệu/hội thoại là **đề xuất** `[Đề xuất]` của T05 và được
+    hiện thực ở T07–T13; những endpoint đó hiện chưa có ở backend (xem `x-implemented`).
+servers:
+  - url: /
+tags:
+  - name: auth
+  - name: system
+  - name: documents
+  - name: conversations
+  - name: events
+
+paths:
+  /api/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Đăng nhập
+      description: Đúng → 204 và cookie phiên. Sai tên hoặc sai mật khẩu trả cùng một lỗi `INVALID_CREDENTIALS`.
+      x-implemented: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '204':
+          description: Đã đăng nhập; cookie phiên được đặt.
+          headers:
+            Set-Cookie:
+              description: "`DOCCHAT_SESSION`; `HttpOnly; SameSite=Lax; Path=/; Max-Age=28800` (và `Secure`)."
+              schema: { type: string }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '401': { $ref: '#/components/responses/InvalidCredentials' }
+        '403': { $ref: '#/components/responses/CsrfRejected' }
+        '423': { $ref: '#/components/responses/AccountLocked' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Đăng xuất (hủy phiên phía máy chủ)
+      description: Luôn trả 204, kể cả khi chưa đăng nhập.
+      x-implemented: true
+      responses:
+        '204':
+          description: Đã hủy phiên; cookie bị xóa.
+        '403': { $ref: '#/components/responses/CsrfRejected' }
+  /api/me:
+    get:
+      tags: [auth]
+      operationId: getMe
+      summary: Người dùng hiện tại
+      x-implemented: true
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Thông tin người dùng đang đăng nhập.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      summary: Tiến trình còn sống
+      x-implemented: true
+      responses:
+        '200':
+          description: Còn sống.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /api/ready:
+    get:
+      tags: [system]
+      operationId: getReady
+      summary: Sẵn sàng nhận yêu cầu (CSDL và thư mục lưu tệp)
+      description: Không kiểm tra dịch vụ AI để không kéo sập khi AI lỗi.
+      x-implemented: true
+      responses:
+        '200':
+          description: Sẵn sàng.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+        '503':
+          description: Chưa sẵn sàng (một thành phần lỗi).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+
+  /api/documents:
+    get:
+      tags: [documents]
+      operationId: listDocuments
+      summary: IF-02 — Danh sách tài liệu của workspace
+      x-implemented: true
+      security: [{ sessionCookie: [] }]
+      responses:
+        '200':
+          description: Danh sách, mới nhất trước; không gồm tài liệu đã xóa.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DocumentList' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [documents]
+      operationId: uploadDocument
+      summary: IF-03 — Tải lên một tệp PDF
+      description: |
+        **Một tệp mỗi yêu cầu** (để có tiến trình và thử lại từng tệp). Kiểm tra theo thứ tự: tên tệp → `%PDF-` trong
+        1024 byte đầu → chỗ trống → dung lượng (kiểm khi truyền, vượt là dừng ngay). Tệp bị từ chối không tạo bất kỳ dữ liệu nào.
+      x-implemented: true
+      security: [{ sessionCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '202':
+          description: Đã nhận; đang xử lý nền.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadAccepted' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/CsrfRejected' }
+        '409': { $ref: '#/components/responses/WorkspaceFull' }
+        '413': { $ref: '#/components/responses/FileTooLarge' }
+        '415': { $ref: '#/components/responses/NotPdf' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /api/documents/{id}/file:
+    get:
+      tags: [documents]
+      operationId: getDocumentFile
+      summary: IF-07 — PDF gốc (hỗ trợ Range)
+      description: "Hỗ trợ một dải `Range: bytes=a-b` (206). Tài liệu không tồn tại, đã xóa hoặc ở trạng thái lỗi → 404."
+      x-implemented: false
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: Range
+          in: header
+          required: false
+          schema: { type: string, example: 'bytes=0-65535' }
+      responses:
+        '200':
+          description: Toàn bộ tệp.
+          headers:
+            X-Content-Type-Options: { $ref: '#/components/headers/XContentTypeOptions' }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '206':
+          description: Một khoảng của tệp.
+          headers:
+            Content-Range: { schema: { type: string, example: 'bytes 0-65535/1048576' } }
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '416':
+          description: Dải không hợp lệ.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/events:
+    get:
+      tags: [events]
+      operationId: streamEvents
+      summary: IF-06 — Luồng sự kiện workspace (SSE)
+      description: Xem [sse-events.md](sse-events.md#if-06-get-apievents).
+      x-implemented: false
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Luồng `text/event-stream`.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/conversations:
+    post:
+      tags: [conversations]
+      operationId: createConversation
+      summary: Tạo hội thoại
+      x-implemented: false
+      security: [{ sessionCookie: [] }]
+      responses:
+        '201':
+          description: Đã tạo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/CsrfRejected' }
+  /api/conversations/{id}/messages:
+    post:
+      tags: [conversations]
+      operationId: askQuestion
+      summary: IF-05 — Đặt câu hỏi, nhận câu trả lời qua SSE
+      description: |
+        Kiểm tra **trước** khi mở luồng (lỗi trả HTTP thường): rỗng → `EMPTY_QUESTION`; > 2000 ký tự →
+        `QUESTION_TOO_LONG`; hội thoại không thuộc người dùng → `NOT_FOUND`; không có tài liệu sẵn sàng →
+        `NO_READY_DOCUMENTS`; vượt hạn mức → `RATE_LIMITED`. Sau đó trả luồng sự kiện, xem
+        [sse-events.md](sse-events.md#if-05-post-apiconversationsidmessages).
+      x-implemented: false
+      security: [{ sessionCookie: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AskRequest' }
+      responses:
+        '200':
+          description: Luồng `text/event-stream`.
+          content:
+            text/event-stream:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/CsrfRejected' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/NoReadyDocuments' }
+        '422': { $ref: '#/components/responses/InvalidQuestion' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: DOCCHAT_SESSION
+
+  headers:
+    XContentTypeOptions:
+      description: Luôn là nosniff.
+      schema: { type: string, example: nosniff }
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, minLength: 1, maxLength: 100 }
+        password: { type: string, minLength: 1, maxLength: 1024 }
+    Me:
+      type: object
+      required: [id, username, role]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        role: { type: string, enum: [ADMIN, MEMBER] }
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [UP] }
+    Readiness:
+      type: object
+      required: [status, checks]
+      properties:
+        status: { type: string, enum: [UP, DOWN] }
+        checks:
+          type: object
+          required: [database, storage]
+          properties:
+            database: { type: string, enum: [UP, DOWN] }
+            storage: { type: string, enum: [UP, DOWN] }
+
+    DocumentStatus:
+      type: string
+      enum: [PROCESSING, READY, ERROR]
+    DocumentErrorCode:
+      type: string
+      description: Lý do tài liệu ở trạng thái `ERROR` (xử lý nền, T08).
+      enum: [PASSWORD_PROTECTED, SCANNED_NO_TEXT, CORRUPT, TOO_MANY_PAGES, PROCESSING_FAILED]
+    DocumentWarning:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, enum: [UNREADABLE_PAGES] }
+        pages:
+          type: array
+          items: { type: integer, minimum: 1 }
+    DocumentSummary:
+      type: object
+      required: [id, name, sizeBytes, pageCount, status, errorCode, warning, uploadedBy, uploadedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        sizeBytes: { type: integer, format: int64 }
+        pageCount: { type: integer, nullable: true }
+        status: { $ref: '#/components/schemas/DocumentStatus' }
+        # OpenAPI 3.0 không cho `nullable` đứng cạnh `allOf`/`$ref` (null bị từ chối), nên hai trường dưới đây
+        # viết lại nội dung của DocumentErrorCode / DocumentWarning kèm null. Sửa ở đây khi sửa hai schema đó.
+        errorCode:
+          type: string
+          nullable: true
+          enum: [PASSWORD_PROTECTED, SCANNED_NO_TEXT, CORRUPT, TOO_MANY_PAGES, PROCESSING_FAILED, null]
+        warning:
+          type: object
+          nullable: true
+          required: [code]
+          properties:
+            code: { type: string, enum: [UNREADABLE_PAGES] }
+            pages:
+              type: array
+              items: { type: integer, minimum: 1 }
+        uploadedBy: { type: string, format: uuid }
+        uploadedAt: { type: string, format: date-time }
+    DocumentList:
+      type: object
+      required: [items, count, limit]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/DocumentSummary' }
+        count: { type: integer, minimum: 0 }
+        limit: { type: integer, example: 20 }
+    UploadAccepted:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [PROCESSING] }
+
+    Conversation:
+      type: object
+      required: [id, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+    AskRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Đếm theo điểm mã Unicode; chuỗi chỉ khoảng trắng bị từ chối `EMPTY_QUESTION`.
+
+    ErrorCode:
+      type: string
+      description: |
+        Danh mục mã lỗi **duy nhất** cho BE và FE. Mỗi mã có HTTP status và cờ `retryable` trong `x-catalog`;
+        test ở cả hai phía kiểm tra khớp với tệp này.
+      enum:
+        - UNAUTHENTICATED
+        - INVALID_CREDENTIALS
+        - ACCOUNT_LOCKED
+        - CSRF_REJECTED
+        - INVALID_REQUEST
+        - NOT_PDF
+        - FILE_TOO_LARGE
+        - WORKSPACE_FULL
+        - EMPTY_QUESTION
+        - QUESTION_TOO_LONG
+        - NO_READY_DOCUMENTS
+        - RATE_LIMITED
+        - LLM_UNAVAILABLE
+        - TIMEOUT
+        - NOT_FOUND
+        - METHOD_NOT_ALLOWED
+        - UNSUPPORTED_MEDIA_TYPE
+        - NOT_READY
+        - INTERNAL
+      x-catalog:
+        UNAUTHENTICATED: { status: 401, retryable: false }
+        INVALID_CREDENTIALS: { status: 401, retryable: false }
+        ACCOUNT_LOCKED: { status: 423, retryable: false }
+        CSRF_REJECTED: { status: 403, retryable: false }
+        INVALID_REQUEST: { status: 400, retryable: false }
+        NOT_PDF: { status: 415, retryable: false }
+        FILE_TOO_LARGE: { status: 413, retryable: false }
+        WORKSPACE_FULL: { status: 409, retryable: false }
+        EMPTY_QUESTION: { status: 422, retryable: false }
+        QUESTION_TOO_LONG: { status: 422, retryable: false }
+        NO_READY_DOCUMENTS: { status: 409, retryable: false }
+        RATE_LIMITED: { status: 429, retryable: true }
+        LLM_UNAVAILABLE: { status: 503, retryable: true }
+        TIMEOUT: { status: 504, retryable: true }
+        NOT_FOUND: { status: 404, retryable: false }
+        METHOD_NOT_ALLOWED: { status: 405, retryable: false }
+        UNSUPPORTED_MEDIA_TYPE: { status: 415, retryable: false }
+        NOT_READY: { status: 503, retryable: true }
+        INTERNAL: { status: 500, retryable: true }
+    Error:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code: { $ref: '#/components/schemas/ErrorCode' }
+        message:
+          type: string
+          description: Ngắn, chung, bằng tiếng Anh; không lộ chi tiết nội bộ. Văn bản tiếng Việt cho người dùng do FE ánh xạ theo `code`.
+        traceId:
+          type: string
+          nullable: true
+          description: Giá trị header `X-Request-Id`.
+
+  responses:
+    InvalidRequest:
+      description: Yêu cầu sai định dạng (`INVALID_REQUEST`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthenticated:
+      description: Chưa đăng nhập hoặc phiên hết hạn (`UNAUTHENTICATED`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InvalidCredentials:
+      description: Sai tên đăng nhập hoặc mật khẩu (`INVALID_CREDENTIALS`) — không phân biệt hai trường hợp.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    AccountLocked:
+      description: Bị khóa tạm sau nhiều lần sai (`ACCOUNT_LOCKED`), kể cả khi nhập đúng mật khẩu.
+      headers:
+        Retry-After: { schema: { type: integer }, description: Số giây còn bị khóa. }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Vượt hạn mức (`RATE_LIMITED`).
+      headers:
+        Retry-After: { schema: { type: integer }, description: Số giây cần chờ. }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    CsrfRejected:
+      description: Origin không được phép (`CSRF_REJECTED`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Không tồn tại hoặc không có quyền xem (`NOT_FOUND`) — không phân biệt.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotPdf:
+      description: Không phải PDF (`NOT_PDF`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    FileTooLarge:
+      description: Quá giới hạn dung lượng (`FILE_TOO_LARGE`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    WorkspaceFull:
+      description: Workspace đã đủ số tài liệu tối đa (`WORKSPACE_FULL`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NoReadyDocuments:
+      description: Chưa có tài liệu sẵn sàng (`NO_READY_DOCUMENTS`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    InvalidQuestion:
+      description: Câu hỏi rỗng (`EMPTY_QUESTION`) hoặc quá dài (`QUESTION_TOO_LONG`).
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

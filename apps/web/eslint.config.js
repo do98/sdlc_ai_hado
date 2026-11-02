@@ -38,7 +38,17 @@ const HTML_SINKS = [
 ];
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'coverage'] },
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'coverage',
+      'test-results',
+      'playwright-report',
+      'public/mockServiceWorker.js',
+      'src/shared/api/schema.d.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/recommended'],
@@ -112,6 +122,19 @@ export default tseslint.config(
       ],
       'vue/no-v-html': 'off',
     },
+  },
+  // Thư viện thành phần dùng tên một từ (Button, Input…) theo quy ước của Reka UI/shadcn
+  {
+    files: ['src/shared/ui/**/*.vue'],
+    rules: { 'vue/multi-word-component-names': 'off' },
+  },
+  // Prop tùy chọn không cần giá trị mặc định (TypeScript đã mô tả kiểu; undefined là mặc định hợp lệ)
+  { files: ['**/*.vue'], rules: { 'vue/require-default-prop': 'off' } },
+  { files: ['**/*.test.ts'], rules: { 'vue/one-component-per-file': 'off' } },
+  // Tập lệnh Node (sinh kiểu từ OpenAPI…)
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: { globals: { process: 'readonly', console: 'readonly', URL: 'readonly' } },
   },
   prettier,
 );
